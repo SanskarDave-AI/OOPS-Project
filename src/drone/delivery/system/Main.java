@@ -103,6 +103,6 @@ public class Main {
         System.out.println("╔════════════════════════════════════════════════════════════╗");
         System.out.println("║          MEMBER 1 IMPLEMENTATION COMPLETE ✓                 ║");
         System.out.println("╚════════════════════════════════════════════════════════════╝");
-        System.out.println();
+        System.out.println(" ");
     }
 }
