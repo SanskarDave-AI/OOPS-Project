@@ -1,8 +1,6 @@
 
 
-// ==========================================
-// File: main/Main.java  (Member 1 + Member 2)
-// ==========================================
+
 package main;
 
 import drones.StandardDrone;
@@ -12,17 +10,27 @@ import drones.Drone;
 import manager.DeliveryPackage;
 import manager.DeliveryManager;
 import components.Location;
+import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
+
+        Scanner sc = new Scanner(System.in);
 
         // ==============================
         // MEMBER 1: Create Drones
         // All drones start at WAREHOUSE (0,0) by default
         // ==============================
-        StandardDrone  d1 = new StandardDrone(101);
-        ExpressDrone   d2 = new ExpressDrone(102);
-        HeavyLiftDrone d3 = new HeavyLiftDrone(103);
+        System.out.print("Enter ID for StandardDrone:  ");
+        int id1 = sc.nextInt();
+        System.out.print("Enter ID for ExpressDrone:   ");
+        int id2 = sc.nextInt();
+        System.out.print("Enter ID for HeavyLiftDrone: ");
+        int id3 = sc.nextInt();
+
+        StandardDrone  d1 = new StandardDrone(id1);
+        ExpressDrone   d2 = new ExpressDrone(id2);
+        HeavyLiftDrone d3 = new HeavyLiftDrone(id3);
 
         // ==============================
         // MEMBER 2: Setup Fleet
@@ -32,16 +40,18 @@ public class Main {
         manager.addDrone(d2);
         manager.addDrone(d3);
 
-        // Show initial fleet
         manager.showAllDrones();
 
         // ==============================
         // TEST 1: URGENT small package
-        // Expected: ExpressDrone (d2) assigned
-        // Flow: (0,0) → (12,15) → back to (0,0)
         // ==============================
         System.out.println("\n========== TEST 1: URGENT PACKAGE ==========");
-        DeliveryPackage pkg1 = new DeliveryPackage(501, 2.0, "URGENT", new Location(12, 15));
+        System.out.print("Enter package ID:       ");  int pid1 = sc.nextInt();
+        System.out.print("Enter weight (kg):      ");  double w1  = sc.nextDouble();
+        System.out.print("Enter dest X:           ");  int x1    = sc.nextInt();
+        System.out.print("Enter dest Y:           ");  int y1    = sc.nextInt();
+
+        DeliveryPackage pkg1 = new DeliveryPackage(pid1, w1, "URGENT", new Location(x1, y1));
         System.out.println(pkg1);
 
         Drone assigned1 = manager.assignDrone(pkg1);
@@ -55,11 +65,14 @@ public class Main {
 
         // ==============================
         // TEST 2: NORMAL heavy package
-        // Expected: HeavyLiftDrone (d3) assigned
-        // Flow: (0,0) → (25,30) → back to (0,0)
         // ==============================
         System.out.println("\n========== TEST 2: HEAVY NORMAL PACKAGE ==========");
-        DeliveryPackage pkg2 = new DeliveryPackage(502, 15.0, "NORMAL", new Location(25, 30));
+        System.out.print("Enter package ID:       ");  int pid2 = sc.nextInt();
+        System.out.print("Enter weight (kg):      ");  double w2  = sc.nextDouble();
+        System.out.print("Enter dest X:           ");  int x2    = sc.nextInt();
+        System.out.print("Enter dest Y:           ");  int y2    = sc.nextInt();
+
+        DeliveryPackage pkg2 = new DeliveryPackage(pid2, w2, "NORMAL", new Location(x2, y2));
         System.out.println(pkg2);
 
         Drone assigned2 = manager.assignDrone(pkg2);
@@ -72,12 +85,16 @@ public class Main {
         }
 
         // ==============================
-        // TEST 3: URGENT but ExpressDrone busy
-        // Expected: fallback to StandardDrone
+        // TEST 3: URGENT — simulate busy ExpressDrone
         // ==============================
         System.out.println("\n========== TEST 3: URGENT - EXPRESS BUSY ==========");
-        d2.setStatus("DELIVERING");
-        DeliveryPackage pkg3 = new DeliveryPackage(503, 2.0, "URGENT", new Location(6, 8));
+        System.out.print("Enter package ID:       ");  int pid3 = sc.nextInt();
+        System.out.print("Enter weight (kg):      ");  double w3  = sc.nextDouble();
+        System.out.print("Enter dest X:           ");  int x3    = sc.nextInt();
+        System.out.print("Enter dest Y:           ");  int y3    = sc.nextInt();
+
+        d2.setStatus("DELIVERING");   // mark express as busy
+        DeliveryPackage pkg3 = new DeliveryPackage(pid3, w3, "URGENT", new Location(x3, y3));
         System.out.println(pkg3);
 
         Drone assigned3 = manager.assignDrone(pkg3);
@@ -90,29 +107,44 @@ public class Main {
         }
 
         // ==============================
-        // TEST 4: No suitable drone
-        // Expected: "No suitable drone found"
+        // TEST 4: No suitable drone (low battery)
         // ==============================
         System.out.println("\n========== TEST 4: NO SUITABLE DRONE ==========");
-        d1.getBattery().setLevel(5);
-        d2.getBattery().setLevel(5);
-        d3.getBattery().setLevel(5);
+        System.out.print("Enter battery level to simulate low battery (e.g. 5): ");
+        int lowBattery = sc.nextInt();
+
+        d1.getBattery().setLevel(lowBattery);
+        d2.getBattery().setLevel(lowBattery);
+        d3.getBattery().setLevel(lowBattery);
         d2.setStatus("AVAILABLE");
-        DeliveryPackage pkg4 = new DeliveryPackage(504, 1.0, "NORMAL", new Location(3, 4));
+
+        System.out.print("Enter package ID:       ");  int pid4 = sc.nextInt();
+        System.out.print("Enter weight (kg):      ");  double w4  = sc.nextDouble();
+        System.out.print("Enter dest X:           ");  int x4    = sc.nextInt();
+        System.out.print("Enter dest Y:           ");  int y4    = sc.nextInt();
+
+        DeliveryPackage pkg4 = new DeliveryPackage(pid4, w4, "NORMAL", new Location(x4, y4));
         System.out.println(pkg4);
 
         Drone assigned4 = manager.assignDrone(pkg4);
         if (assigned4 == null) {
-            System.out.println("No drone assigned — as their battery is low and they are charging  , wait sometime.");
+            System.out.println("No drone assigned — battery is low, they are charging. Please wait.");
         }
 
         // ==============================
         // FINAL FLEET STATUS
         // ==============================
         System.out.println("\n========== FINAL FLEET STATUS ==========");
-        d1.getBattery().setLevel(100);
-        d2.getBattery().setLevel(100);
-        d3.getBattery().setLevel(100);
-        manager.showAllDrones();// 
+        System.out.print("Enter battery level to restore (e.g. 100): ");
+        int fullBattery = sc.nextInt();
+
+
+
+        d1.getBattery().setLevel(fullBattery);
+        d2.getBattery().setLevel(fullBattery);
+        d3.getBattery().setLevel(fullBattery);
+        manager.showAllDrones();
+
+        sc.close();
     }
 }
