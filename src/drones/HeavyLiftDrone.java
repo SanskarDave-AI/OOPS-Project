@@ -7,26 +7,28 @@ import components.Location;
 
 public class HeavyLiftDrone extends Drone {
 
-    private static final double BATTERY_DRAIN = 25.0; // Heaviest load = most drain
-    private static final double MIN_BATTERY   = 30.0;
-
     public HeavyLiftDrone(int droneId) {
         super(droneId, 20.0); // Max capacity: 20 kg
+        this.speed = 6.0;
     }
 
     @Override
     public void flyTo(Location destination) {
-        if (!battery.hasSufficientCharge(MIN_BATTERY)) {
-            System.out.println("HeavyLift Drone " + droneId
-                    + " has insufficient battery! Please charge first.");
+        double distance = location.distanceTo(destination);
+        double batteryUsage = distance * 4;
+
+        if (!battery.hasSufficientCharge(batteryUsage)) {
+            System.out.printf("HeavyLift Drone %d has insufficient battery for %.2f meters. " +
+                    "Required: %.2f%%, Available: %.2f%%%n",
+                    droneId, distance, batteryUsage, battery.getLevel());
             return;
         }
 
         status = "HEAVY DELIVERY";
-        System.out.println("\nHeavyLift Drone " + droneId
-                + " moving toward " + destination);
-        battery.drainBattery(BATTERY_DRAIN);
+        System.out.printf("\nHeavyLift Drone %d moving toward %s at %.2f m/s%n",
+                droneId, destination, speed);
+        battery.drainBattery(batteryUsage);
         location = destination;
-        System.out.println("Battery after heavy flight: " + battery.getLevel() + "%");
+        System.out.printf("Battery after heavy flight: %.2f%%%n", battery.getLevel());
     }
 }

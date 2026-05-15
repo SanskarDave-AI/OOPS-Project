@@ -60,17 +60,66 @@ public class DeliveryManager {
         System.out.println("Pickup   : WAREHOUSE " + WAREHOUSE);
         System.out.println("Delivery : " + pkg.getDestination());
 
-        double distance = calculateDistance(pkg.getDestination());
-        System.out.println("Distance : " + String.format("%.2f", distance) + " units");
+        double maxCapacity = getMaxDroneCapacity();
+        if (pkg.getWeight() > maxCapacity) {
+            System.out.println("ERROR: Package weight " + pkg.getWeight() + " kg exceeds maximum available drone capacity of "
+                    + String.format("%.2f", maxCapacity) + " kg.");
+            System.out.println("Package " + pkg.getPackageId() + " cannot be assigned to any drone.");
+            return null;
+        }
+
+        double oneSideDistance = calculateDistance(pkg.getDestination());
+        double requiredBattery = oneSideDistance * 2;
+
+        System.out.println("Distance : " + String.format("%.2f", oneSideDistance) + " meters");
+        System.out.println("Required Battery (round trip baseline): "
+                + String.format("%.2f", requiredBattery) + "%");
+        System.out.println("Preferred Drone Type: " + pkg.getPreferredDroneType());
 
         Drone  bestDrone   = null;
         double bestBattery = -1;
+
+        String preferredType = pkg.getPreferredDroneType();
+        if (!preferredType.isBlank() && !preferredType.equals("ANY")) {
+            Class<?> preferredClass = null;
+            switch (preferredType) {
+                case "STANDARD" -> preferredClass = StandardDrone.class;
+                case "EXPRESS"  -> preferredClass = ExpressDrone.class;
+                case "HEAVY"    -> preferredClass = HeavyLiftDrone.class;
+            }
+
+            if (preferredClass != null) {
+                System.out.println("Trying preferred drone type: " + preferredType);
+                bestBattery = -1;
+                for (Drone drone : drones) {
+                    if (!preferredClass.isInstance(drone))   continue;
+                    if (!drone.getStatus().equals("AVAILABLE"))  continue;
+                    if (drone.getCapacity() < pkg.getWeight())   continue;
+                    if (!hasEnoughBatteryForRoute(drone, oneSideDistance)) continue;
+
+                    if (drone.getBattery().getLevel() > bestBattery) {
+                        bestBattery = drone.getBattery().getLevel();
+                        bestDrone   = drone;
+                    }
+                }
+
+                if (bestDrone != null) {
+                    bestDrone.setStatus("ASSIGNED");
+                    System.out.println("Assigned : Drone " + bestDrone.getDroneId()
+                            + " (" + bestDrone.getClass().getSimpleName() + ")"
+                            + " | Battery: " + bestDrone.getBattery().getLevel() + "%");
+                    return bestDrone;
+                }
+
+                System.out.println("Preferred drone type not available or suitable. Searching alternatives...");
+            }
+        }
 
         // --- PASS 1: URGENT → ExpressDrone preferred ---
         for (Drone drone : drones) {
             if (!drone.getStatus().equals("AVAILABLE"))  continue;
             if (drone.getCapacity() < pkg.getWeight())   continue;
-            if (drone.getBattery().getLevel() < 30)      continue;
+            if (!hasEnoughBatteryForRoute(drone, oneSideDistance)) continue;
 
             if (pkg.getPriority().equals("URGENT")) {
                 if (!(drone instanceof ExpressDrone)) continue;
@@ -91,7 +140,7 @@ public class DeliveryManager {
             for (Drone drone : drones) {
                 if (!drone.getStatus().equals("AVAILABLE"))  continue;
                 if (drone.getCapacity() < pkg.getWeight())   continue;
-                if (drone.getBattery().getLevel() < 30)      continue;
+                if (!hasEnoughBatteryForRoute(drone, oneSideDistance)) continue;
 
                 if (drone.getBattery().getLevel() > bestBattery) {
                     bestBattery = drone.getBattery().getLevel();
@@ -108,7 +157,7 @@ public class DeliveryManager {
             for (Drone drone : drones) {
                 if (!(drone instanceof StandardDrone))       continue;
                 if (!drone.getStatus().equals("AVAILABLE"))  continue;
-                if (drone.getBattery().getLevel() < 30)      continue;
+                if (!hasEnoughBatteryForRoute(drone, oneSideDistance)) continue;
 
                 if (drone.getBattery().getLevel() > bestBattery) {
                     bestBattery = drone.getBattery().getLevel();
@@ -125,7 +174,7 @@ public class DeliveryManager {
             for (Drone drone : drones) {
                 if (!(drone instanceof HeavyLiftDrone))      continue;
                 if (!drone.getStatus().equals("AVAILABLE"))  continue;
-                if (drone.getBattery().getLevel() < 30)      continue;
+                if (!hasEnoughBatteryForRoute(drone, oneSideDistance)) continue;
 
                 if (drone.getBattery().getLevel() > bestBattery) {
                     bestBattery = drone.getBattery().getLevel();
@@ -149,5 +198,27 @@ public class DeliveryManager {
                 + " | Battery: " + bestDrone.getBattery().getLevel() + "%");
 
         return bestDrone;
+    }
+
+    private double getMaxDroneCapacity() {
+        double maxCapacity = 0;
+        for (Drone drone : drones) {
+            if (drone.getCapacity() > maxCapacity) {
+                maxCapacity = drone.getCapacity();
+            }
+        }
+        return maxCapacity;
+    }
+
+    private boolean hasEnoughBatteryForRoute(Drone drone, double oneSideDistance) {
+        double requiredBattery = oneSideDistance * 2;
+
+        if (drone instanceof ExpressDrone) {
+            requiredBattery = oneSideDistance * 3;
+        } else if (drone instanceof HeavyLiftDrone) {
+            requiredBattery = oneSideDistance * 4;
+        }
+
+        return drone.getBattery().getLevel() >= requiredBattery;
     }
 }

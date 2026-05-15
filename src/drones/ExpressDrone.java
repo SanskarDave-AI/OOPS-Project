@@ -7,26 +7,28 @@ import components.Location;
 
 public class ExpressDrone extends Drone {
 
-    private static final double BATTERY_DRAIN = 20.0; // Faster = more drain
-    private static final double MIN_BATTERY   = 25.0;
-
     public ExpressDrone(int droneId) {
         super(droneId, 3.0); // Max capacity: 3 kg — lighter, faster
+        this.speed = 20.0;
     }
 
     @Override
     public void flyTo(Location destination) {
-        if (!battery.hasSufficientCharge(MIN_BATTERY)) {
-            System.out.println("Express Drone " + droneId
-                    + " has insufficient battery! Please charge first.");
+        double distance = location.distanceTo(destination);
+        double batteryUsage = distance * 3;
+
+        if (!battery.hasSufficientCharge(batteryUsage)) {
+            System.out.printf("Express Drone %d has insufficient battery for %.2f meters. " +
+                    "Required: %.2f%%, Available: %.2f%%%n",
+                    droneId, distance, batteryUsage, battery.getLevel());
             return;
         }
 
         status = "FLYING FAST";
-        System.out.println("\nExpress Drone " + droneId
-                + " flying quickly to " + destination);
-        battery.drainBattery(BATTERY_DRAIN);
+        System.out.printf("\nExpress Drone %d flying quickly to %s at %.2f m/s%n",
+                droneId, destination, speed);
+        battery.drainBattery(batteryUsage);
         location = destination;
-        System.out.println("Battery after fast flight: " + battery.getLevel() + "%");
+        System.out.printf("Battery after fast flight: %.2f%%%n", battery.getLevel());
     }
 }

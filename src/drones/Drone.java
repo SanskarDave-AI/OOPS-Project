@@ -12,6 +12,7 @@ public abstract class Drone {
     protected Battery battery;
     protected Location location;
     protected String status;
+    protected double speed;
 
     public Drone(int droneId, double capacity) {
         this.droneId   = droneId;
@@ -19,6 +20,7 @@ public abstract class Drone {
         this.battery   = new Battery(100);
         this.location  = new Location(0, 0);
         this.status    = "AVAILABLE";/*"AVAILABLE" ,  "DELIVERING" ,CHARGING"   */
+        this.speed     = 0;
     }
 
     // Abstract — each drone type implements its own fly behavior
@@ -33,10 +35,11 @@ public abstract class Drone {
     // Return drone back to base (0,0)
     public void returnToBase() {
         System.out.println("Drone " + droneId + " returning to base...");
-        flyTo(new Location(0, 0));
-       
-        System.out.println("Drone " + droneId + " is back at base  and AVAILABLE after 5 min of charging.");
-         status = "AVAILABLE";
+        status = "RETURNING";
+        location = new Location(0, 0);
+        System.out.println("Drone " + droneId + " has reached the warehouse at " + location + ".");
+        System.out.println("No additional battery drain during return.");
+        status = "AVAILABLE";
     }
 
     // Charge drone battery
@@ -67,6 +70,7 @@ The object answers: */
     public Battery  getBattery()    { return battery; }
     public Location getLocation()   { return location; }
     public String   getStatus()     { return status; }
+    public double   getSpeed()      { return speed; }
 
     // Setters
     public void setStatus(String status)       { this.status = status; }
